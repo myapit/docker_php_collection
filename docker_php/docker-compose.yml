@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  phpfpm82:
+    build:
+      context: .
+      dockerfile: dockerfile  # Path to your Dockerfile
+    ports:
+      - "127.0.0.1:9001:9001"  # Maps port 9001 on localhost to port 9001 in the container
+    networks:
+      php_network:
+        ipv4_address: 172.20.0.2  # Fixed IP address within the custom bridge network
+    restart: unless-stopped  # Auto restart unless explicitly stopped
+    healthcheck:  # Health check configuration
+      test: ["CMD", "curl", "-f", "http://localhost:9001/health"]  # Command to perform health check
+      interval: 30s  # Interval between health checks
+      timeout: 10s  # Timeout for each health check attempt
+      retries: 3  # Number of retries before considering the service unhealthy
+      start_period: 30s  # Delay before starting health checks after container startup
+
+networks:
+  php_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16  # Define a subnet for the custom bridge network
+          gateway: 172.20.0.1   # Define the gateway for the subnet
+          ip_range: 172.20.0.0/24   # Define the range of IP addresses available for assignment
+
