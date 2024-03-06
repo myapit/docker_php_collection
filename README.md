@@ -1,5 +1,5 @@
-### docker_php_collection
-collection of dockerfiles PHP-FPM with most extension
+# My DOckerfiles Collection
+mostly used collection of dockerfiles PHP-FPM with most extension. run on alpine linux
 
 
 ## Docker PHP 5.4 FPM on Centos 7 with SYBASE Support
