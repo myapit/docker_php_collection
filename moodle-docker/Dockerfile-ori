@@ -1,0 +1,96 @@
+FROM php:8.3-apache
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    libicu-dev \
+    libxml2-dev \
+    libldap2-dev \
+    libpq-dev \
+    libonig-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libmagickwand-dev \
+    git \
+    unzip \
+    zip \
+    curl \
+    wget \
+    default-mysql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/
+
+# Install PHP extensions
+RUN docker-php-ext-install \
+    gd \
+    pdo_mysql \
+    mysqli \
+    zip \
+    intl \
+    soap \
+    mbstring \
+    exif \
+    bcmath \
+    calendar \
+    ctype \
+    curl \
+    dom \
+    fileinfo \
+    ftp \
+    gettext \
+    iconv \
+    json \
+    ldap \
+    opcache \
+    pdo \
+    phar \
+    posix \
+    session \
+    simplexml \
+    tokenizer \
+    xml \
+    xmlwriter \
+    zlib
+
+# Install PECL extensions
+RUN pecl install \
+    xmlprc \
+    redis \
+    imagick \
+    && docker-php-ext-enable \
+    redis \
+    imagick
+
+# Install Xdebug (for development only)
+# RUN pecl install xdebug && docker-php-ext-enable xdebug
+
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Enable Apache modules
+RUN a2enmod rewrite headers ssl
+
+# Configure PHP settings
+COPY php/php.ini /usr/local/etc/php/conf.d/custom.ini
+
+# Configure Apache
+COPY apache/moodle.conf /etc/apache2/sites-available/000-default.conf
+
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+EXPOSE 80

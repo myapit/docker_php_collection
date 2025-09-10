@@ -1,0 +1,56 @@
+#moodle test docker
+services:
+  moodle:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    environment:
+      - MOODLE_DATABASE_HOST=db
+      - MOODLE_DATABASE_NAME=moodle
+      - MOODLE_DATABASE_USER=moodle
+      - MOODLE_DATABASE_PASSWORD=moodle
+      - MOODLE_DATABASE_PORT=3306
+        #- MOODLE_WWWROOT=https://foi.usm.my
+        #- VIRTUAL_HOST=foi.com.my
+        #- VIRTUAL_PORT=80
+    volumes:
+      - ./moodledata:/var/moodledata
+        #- ./config.php:/var/www/html/config.php
+      - ./moodle_html:/var/www/html
+      - ./php-config:/usr/local/etc/php
+    depends_on:
+      - db
+    networks:
+      - moodle-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: moodle
+      MYSQL_USER: moodle
+      MYSQL_PASSWORD: moodle
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MARIADB_AUTO_UPGRADE: 1
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+      - ./mysql.cnf:/etc/mysql/conf.d/custom.cnf
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-file-per-table=1 --innodb-file-format=Barracuda
+    networks:
+      - moodle-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+
+networks:
+  moodle-network:
+    driver: bridge
